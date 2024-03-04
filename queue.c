@@ -15,7 +15,8 @@
 struct list_head *q_new()
 {
     struct list_head *head = malloc(sizeof(struct list_head));
-    INIT_LIST_HEAD(head);
+    if (head)
+        INIT_LIST_HEAD(head);
     return head;
 }
 
@@ -41,12 +42,21 @@ void q_free(struct list_head *head)
 /* Insert an element at head of queue */
 bool q_insert_head(struct list_head *head, char *s)
 {
+    if (!head)
+        return false;
+
     element_t *new_node = malloc(sizeof(element_t));
 
     if (!new_node)
         return false;
 
     new_node->value = strdup(s);
+
+    if (!new_node->value) {
+        free(new_node);
+        return false;
+    }
+
     list_add(&new_node->list, head);
     return true;
 }
@@ -60,6 +70,12 @@ bool q_insert_tail(struct list_head *head, char *s)
         return false;
 
     new_node->value = strdup(s);
+
+    if (!new_node->value) {
+        free(new_node);
+        return false;
+    }
+
     list_add_tail(&new_node->list, head);
     return true;
 }
@@ -75,6 +91,7 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 
     if (sp) {
         strncpy(sp, entry->value, bufsize - 1);
+        sp[bufsize - 1] = '\0';
     }
 
     return entry;
@@ -91,6 +108,7 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 
     if (sp) {
         strncpy(sp, entry->value, bufsize - 1);
+        sp[bufsize - 1] = '\0';
     }
 
     return entry;
@@ -124,6 +142,9 @@ bool q_delete_mid(struct list_head *head)
     }
 
     list_del(front);
+    element_t *entry = list_entry(front, element_t, list);
+    free(entry->value);
+    free(entry);
     return true;
 }
 
@@ -307,5 +328,20 @@ int q_descend(struct list_head *head)
 int q_merge(struct list_head *head, bool descend)
 {
     // https://leetcode.com/problems/merge-k-sorted-lists/
-    return 0;
+    if (!head || list_empty(head))
+        return 0;
+    if (list_is_singular(head))
+        return list_entry(head->next, queue_contex_t, chain)->size;
+    struct list_head *pos, *n;
+    struct list_head first;
+    INIT_LIST_HEAD(&first);
+    list_for_each_safe (pos, n, head) {
+        queue_contex_t *right = list_entry(pos, queue_contex_t, chain);
+        q_merge_two_list(&first, right->q);
+    }
+    int size = q_size(&first);
+    if (descend)
+        q_reverse(&first);
+    list_splice_tail(&first, list_entry(head->next, queue_contex_t, chain)->q);
+    return size;
 }
