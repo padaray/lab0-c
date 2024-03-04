@@ -209,6 +209,7 @@ void q_sort(struct list_head *head, bool descend) {}
 
 /* Remove every node which has a node with a strictly less value anywhere to
  * the right side of it */
+// 升冪排列，右邊的都要比左邊的大
 int q_ascend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
@@ -219,8 +220,28 @@ int q_ascend(struct list_head *head)
  * the right side of it */
 int q_descend(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    return 0;
+    if (!head || list_empty(head))
+        return 0;
+
+    element_t *cur_entry = list_last_entry(head, element_t, list);
+    struct list_head *comp = head->prev->prev;
+    int count = 1;
+
+    while (cur_entry->list.prev != head) {
+        element_t *comp_entry = list_entry(comp, element_t, list);
+
+        if (strcmp(cur_entry->value, comp_entry->value) > 0) {
+            comp = comp->prev;
+            list_del(comp->next);
+            q_release_element(comp_entry);
+        } else {
+            cur_entry = comp_entry;
+            comp = comp->prev;
+            count++;
+        }
+    }
+
+    return count;
 }
 
 /* Merge all the queues into one sorted queue, which is in ascending/descending
