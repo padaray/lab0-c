@@ -330,18 +330,48 @@ int q_merge(struct list_head *head, bool descend)
     // https://leetcode.com/problems/merge-k-sorted-lists/
     if (!head || list_empty(head))
         return 0;
+
     if (list_is_singular(head))
         return list_entry(head->next, queue_contex_t, chain)->size;
+
     struct list_head *pos, *n;
     struct list_head first;
     INIT_LIST_HEAD(&first);
+
     list_for_each_safe (pos, n, head) {
         queue_contex_t *right = list_entry(pos, queue_contex_t, chain);
         q_merge_two_list(&first, right->q);
     }
+
     int size = q_size(&first);
+
     if (descend)
         q_reverse(&first);
+
     list_splice_tail(&first, list_entry(head->next, queue_contex_t, chain)->q);
     return size;
+}
+
+void q_shuffle(struct list_head *head)
+{
+    if (!head || list_empty(head))
+        return;
+
+    int size = q_size(head) - 1;
+    struct list_head *tail;
+
+    for (tail = head->prev; tail != head; tail = tail->prev, size--) {
+        struct list_head *new = head->next;
+
+        for (int randNum = rand() % (size + 1); randNum > 0; randNum--)
+            new = new->next;
+
+        if (tail == new)
+            continue;
+
+        struct list_head *temp = new->prev;
+        list_move(new, tail);
+        list_move(tail, temp);
+        tail = new;
+    }
 }
